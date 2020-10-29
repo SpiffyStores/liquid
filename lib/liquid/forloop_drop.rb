@@ -27,6 +27,14 @@ module Liquid
       @length - @index - 1
     end
 
+    def odd
+      (@index % 2) == 1
+    end
+
+    def even
+      (@index % 2) == 0
+    end
+
     def first
       @index == 0
     end

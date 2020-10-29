@@ -10,8 +10,8 @@ module Liquid
       'empty' => ''
     }.freeze
 
-    SINGLE_QUOTED_STRING = /\A\s*'(.*)'\s*\z/m
-    DOUBLE_QUOTED_STRING = /\A\s*"(.*)"\s*\z/m
+    SINGLE_QUOTED_STRING = /\A\s*'([^']*)'\s*\z/m
+    DOUBLE_QUOTED_STRING = /\A\s*"([^"]*)"\s*\z/m
     INTEGERS_REGEX       = /\A\s*(-?\d+)\s*\z/
     FLOATS_REGEX         = /\A\s*(-?\d[\d\.]+)\s*\z/
     RANGES_REGEX         = /\A\s*\(\s*(\S+)\s*\.\.\s*(\S+)\s*\)\s*\z/

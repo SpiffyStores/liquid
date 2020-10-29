@@ -31,6 +31,15 @@ class AssignTest < Minitest::Test
       'values' => "foo,bar,baz")
   end
 
+  def test_with_filtered_expressions
+    assert_template_result('foo',
+      '{% assign foo = values|sort|last %}{{ foo }}',
+      'values' => %w(foo bar baz))
+    assert_template_result('foo',
+      '{% assign sorted = values|sort %}{{ sorted | last }}',
+      'values' => %w(foo bar baz))
+  end
+
   def test_assign_syntax_error
     assert_match_syntax_error(/assign/,
       '{% assign foo not values %}.',

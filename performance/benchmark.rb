@@ -2,6 +2,8 @@
 
 require 'benchmark/ips'
 require_relative 'theme_runner'
+require 'active_support/time'
+Time.zone = 'Australia/Sydney'
 
 Liquid::Template.error_mode = ARGV.first.to_sym if ARGV.first
 profiler = ThemeRunner.new

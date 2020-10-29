@@ -41,6 +41,8 @@ module Liquid
   #                  (length - index) where 1 is the last item.
   # forloop.rindex0:: Number of items remaining in the loop
   #                   where 0 is the last item.
+  # forloop.odd:: Returns true if the item index (origin 0) is odd.
+  # forloop.even:: Returns true if the item index (origin 0) is even.
   # forloop.first:: Returns true if the item is the first item.
   # forloop.last:: Returns true if the item is the last item.
   # forloop.parentloop:: Provides access to the parent loop, if present.

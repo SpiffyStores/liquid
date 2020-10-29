@@ -27,6 +27,9 @@ else
   Minitest::Test = MiniTest::Unit::TestCase
 end
 
+require 'active_support/time'
+Time.zone = 'Australia/Sydney'
+
 module Minitest
   class Test
     def fixture(name)

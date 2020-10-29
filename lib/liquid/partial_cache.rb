@@ -8,7 +8,14 @@ module Liquid
       return cached if cached
 
       file_system = (context.registers[:file_system] ||= Liquid::Template.file_system)
+
+      # make read_template_file call backwards-compatible.
+      begin
       source      = file_system.read_template_file(template_name)
+      rescue FileSystemError
+        # Attempt to load from global directory
+        source = Liquid::Template.file_system.read_template_file(template_name)
+      end
 
       parse_context.partial = true
 
