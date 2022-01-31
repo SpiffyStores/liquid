@@ -461,6 +461,7 @@ class ContextTest < Minitest::Test
   end
 
   def test_interrupt_avoids_object_allocations
+    @context.interrupt? # ruby 3.0.0 allocates on the first call
     assert_no_object_allocations do
       @context.interrupt?
     end
@@ -566,9 +567,9 @@ class ContextTest < Minitest::Test
   def test_disables_tag_specified
     context = Context.new
     context.with_disabled_tags(%w(foo bar)) do
-      assert_equal true, context.tag_disabled?("foo")
-      assert_equal true, context.tag_disabled?("bar")
-      assert_equal false, context.tag_disabled?("unknown")
+      assert_equal(true, context.tag_disabled?("foo"))
+      assert_equal(true, context.tag_disabled?("bar"))
+      assert_equal(false, context.tag_disabled?("unknown"))
     end
   end
 
@@ -576,19 +577,19 @@ class ContextTest < Minitest::Test
     context = Context.new
     context.with_disabled_tags(["foo"]) do
       context.with_disabled_tags(["foo"]) do
-        assert_equal true, context.tag_disabled?("foo")
-        assert_equal false, context.tag_disabled?("bar")
+        assert_equal(true, context.tag_disabled?("foo"))
+        assert_equal(false, context.tag_disabled?("bar"))
       end
       context.with_disabled_tags(["bar"]) do
-        assert_equal true, context.tag_disabled?("foo")
-        assert_equal true, context.tag_disabled?("bar")
+        assert_equal(true, context.tag_disabled?("foo"))
+        assert_equal(true, context.tag_disabled?("bar"))
         context.with_disabled_tags(["foo"]) do
-          assert_equal true, context.tag_disabled?("foo")
-          assert_equal true, context.tag_disabled?("bar")
+          assert_equal(true, context.tag_disabled?("foo"))
+          assert_equal(true, context.tag_disabled?("bar"))
         end
       end
-      assert_equal true, context.tag_disabled?("foo")
-      assert_equal false, context.tag_disabled?("bar")
+      assert_equal(true, context.tag_disabled?("foo"))
+      assert_equal(false, context.tag_disabled?("bar"))
     end
   end
 
@@ -606,16 +607,16 @@ class ContextTest < Minitest::Test
     end
 
     with_global_filter(global) do
-      assert_equal 'Global test', Template.parse("{{'test' | notice }}").render!
-      assert_equal 'Local test', Template.parse("{{'test' | notice }}").render!({}, filters: [local])
+      assert_equal('Global test', Template.parse("{{'test' | notice }}").render!)
+      assert_equal('Local test', Template.parse("{{'test' | notice }}").render!({}, filters: [local]))
     end
   end
 
   def test_has_key_will_not_add_an_error_for_missing_keys
-    with_error_mode :strict do
+    with_error_mode(:strict) do
       context = Context.new
       context.key?('unknown')
-      assert_empty context.errors
+      assert_empty(context.errors)
     end
   end
 

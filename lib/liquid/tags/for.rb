@@ -65,11 +65,11 @@ module Liquid
         parse_body(@else_block, tokens)
       end
       if blank?
-        @for_block.remove_blank_strings
         @else_block&.remove_blank_strings
+        @for_block.remove_blank_strings
       end
-      @for_block.freeze
       @else_block&.freeze
+      @for_block.freeze
     end
 
     def nodelist
@@ -200,6 +200,7 @@ module Liquid
       case key
       when 'offset'
         @from = if expr == 'continue'
+          Usage.increment('for_offset_continue')
           :continue
         else
           parse_expression(expr)

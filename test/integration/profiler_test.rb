@@ -2,7 +2,7 @@
 
 require 'test_helper'
 
-class RenderProfilingTest < Minitest::Test
+class ProfilerTest < Minitest::Test
   include Liquid
 
   class ProfilingFileSystem
@@ -62,6 +62,17 @@ class RenderProfilingTest < Minitest::Test
     assert_equal(2, included_children[1].line_number)
   end
 
+  def test_profiling_render_tag
+    t = Template.parse("{% render 'a_template' %}", profile: true)
+    t.render!
+
+    render_children = t.profiler[0].children
+    render_children.each do |timing|
+      assert_equal('a_template', timing.partial)
+    end
+    assert_equal([1, 2], render_children.map(&:line_number))
+  end
+
   def test_profiling_times_the_rendering_of_tokens
     t = Template.parse("{% include 'a_template' %}", profile: true)
     t.render!
@@ -75,6 +86,37 @@ class RenderProfilingTest < Minitest::Test
     t.render!
 
     assert(t.profiler.total_render_time >= 0, "Total render time was not calculated")
+  end
+
+  class SleepTag < Liquid::Tag
+    def initialize(tag_name, markup, parse_context)
+      super
+      @duration = Float(markup)
+    end
+
+    def render_to_output_buffer(_context, _output)
+      sleep(@duration)
+    end
+  end
+
+  def test_profiling_multiple_renders
+    with_custom_tag('sleep', SleepTag) do
+      context = Liquid::Context.new
+      t = Liquid::Template.parse("{% sleep 0.001 %}", profile: true)
+      context.template_name = 'index'
+      t.render!(context)
+      context.template_name = 'layout'
+      first_render_time = context.profiler.total_time
+      t.render!(context)
+
+      profiler = context.profiler
+      children = profiler.children
+      assert_operator(first_render_time, :>=, 0.001)
+      assert_operator(profiler.total_time, :>=, 0.001 + first_render_time)
+      assert_equal(["index", "layout"], children.map(&:template_name))
+      assert_equal([nil, nil], children.map(&:code))
+      assert_equal(profiler.total_time, children.map(&:total_time).reduce(&:+))
+    end
   end
 
   def test_profiling_uses_include_to_mark_children
@@ -91,7 +133,7 @@ class RenderProfilingTest < Minitest::Test
 
     include_node = t.profiler[1]
     include_node.children.each do |child|
-      assert_equal "a_template", child.partial
+      assert_equal("a_template", child.partial)
     end
   end
 
@@ -101,12 +143,12 @@ class RenderProfilingTest < Minitest::Test
 
     a_template = t.profiler[1]
     a_template.children.each do |child|
-      assert_equal "a_template", child.partial
+      assert_equal("a_template", child.partial)
     end
 
     b_template = t.profiler[2]
     b_template.children.each do |child|
-      assert_equal "b_template", child.partial
+      assert_equal("b_template", child.partial)
     end
   end
 
@@ -116,12 +158,12 @@ class RenderProfilingTest < Minitest::Test
 
     a_template1 = t.profiler[1]
     a_template1.children.each do |child|
-      assert_equal "a_template", child.partial
+      assert_equal("a_template", child.partial)
     end
 
     a_template2 = t.profiler[2]
     a_template2.children.each do |child|
-      assert_equal "a_template", child.partial
+      assert_equal("a_template", child.partial)
     end
   end
 

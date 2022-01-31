@@ -8,7 +8,7 @@ module Liquid
   #   c = Condition.new(1, '==', 1)
   #   c.evaluate #=> true
   #
-  class Condition #:nodoc:
+  class Condition # :nodoc:
     @@operators = {
       '==' => ->(cond, left, right) {  cond.send(:equal_variables, left, right) },
       '!=' => ->(cond, left, right) { !cond.send(:equal_variables, left, right) },
@@ -134,8 +134,8 @@ module Liquid
       # return this as the result.
       return context.evaluate(left) if op.nil?
 
-      left  = context.evaluate(left)
-      right = context.evaluate(right)
+      left  = Liquid::Utils.to_liquid_value(context.evaluate(left))
+      right = Liquid::Utils.to_liquid_value(context.evaluate(right))
 
       operation = self.class.operators[op] || raise(Liquid::ArgumentError, "Unknown operator #{op}")
 
