@@ -52,7 +52,8 @@ module Liquid
       self.class.to_s
     end
 
-    def to_liquid
+    def to_liquid(context=nil)
+      self.context = context if context
       self
     end
 
@@ -61,6 +62,15 @@ module Liquid
     end
 
     alias_method :[], :invoke_drop
+
+    def as_json(options = nil)
+      except = (Array(options[:except]) + [:to_liquid, :as_json]).map(&:to_s)
+      methods = self.class.invokable_methods.to_a - except
+
+      h = {}
+      methods.each {|i| h[i.to_s] = self.send(i.to_sym)}
+      h
+    end
 
     # Check for method existence without invoking respond_to?, which creates symbols
     def self.invokable?(method_name)
@@ -73,7 +83,7 @@ module Liquid
 
         if include?(Enumerable)
           blacklist += Enumerable.public_instance_methods
-          blacklist -= [:sort, :count, :first, :min, :max]
+          blacklist -= [:sort, :count, :first, :min, :max, :include?]
         end
 
         whitelist = [:to_liquid] + (public_instance_methods - blacklist)

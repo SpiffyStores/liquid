@@ -252,6 +252,6 @@ class DropsTest < Minitest::Test
     assert_equal(%w(to_liquid catchall context texts).to_set, ProductDrop.invokable_methods)
     assert_equal(%w(to_liquid scopes_as_array loop_pos scopes).to_set, ContextDrop.invokable_methods)
     assert_equal(%w(to_liquid size max min first count).to_set, EnumerableDrop.invokable_methods)
-    assert_equal(%w(to_liquid max min sort count first).to_set, RealEnumerableDrop.invokable_methods)
+    assert_equal(%w(to_liquid max min sort count first include?).to_set, RealEnumerableDrop.invokable_methods)
   end
 end # DropsTest
