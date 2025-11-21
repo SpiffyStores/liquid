@@ -28,4 +28,9 @@ group :test do
   gem 'rubocop', '~> 1.61.0'
   gem 'rubocop-shopify', '~> 2.12.0', require: false
   gem 'rubocop-performance', require: false
+  gem 'mutex_m'
+  gem 'logger'
+  gem 'activesupport', '~> 6.0'
+  gem 'tzinfo'
+  gem 'tzinfo-data'
 end

@@ -75,11 +75,11 @@ module Liquid
 
       case obj
       when 'now', 'today'
-        Time.now
+        Time.zone.now
       when UNIX_TIMESTAMP_REGEX, Integer
         Time.at(obj.to_i)
       when String
-        Time.parse(obj)
+        Time.zone.parse(obj)
       end
     rescue ::ArgumentError
       nil

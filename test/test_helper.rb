@@ -8,6 +8,14 @@ $LOAD_PATH.unshift(File.join(File.expand_path(__dir__), '..', 'lib'))
 require 'liquid.rb'
 require 'liquid/profiler'
 
+require 'mutex_m'
+require 'logger'
+require 'active_support/all'
+require 'tzinfo'
+require 'tzinfo/data'
+
+Time.zone = 'Australia/Sydney'
+
 mode = :strict
 if (env_mode = ENV['LIQUID_PARSER_MODE'])
   puts "-- #{env_mode.upcase} ERROR MODE"
