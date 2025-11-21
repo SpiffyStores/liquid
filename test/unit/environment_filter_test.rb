@@ -56,7 +56,7 @@ class EnvironmentFilterTest < Minitest::Test
     )
 
     source = AccessScopeFilters.instance_method(:public_filter).source_location
-    assert_equal(source[0..1].map(&:to_s), exception.backtrace[0].split(':')[0..1])
+    assert_equal(source[0..1].map(&:to_s), exception.backtrace[0].rpartition(':').first.rpartition(':').values_at(0, 2))
   end
 
   def test_strainer_only_invokes_public_filter_methods
