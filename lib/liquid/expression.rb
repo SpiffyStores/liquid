@@ -24,8 +24,8 @@ module Liquid
     # Use an atomic group (?>...) to avoid pathological backtracing from
     # malicious input as described in https://github.com/Shopify/liquid/issues/1357
     RANGES_REGEX = /\A\(\s*(?>(\S+)\s*\.\.)\s*(\S+)\s*\)\z/
-    INTEGER_REGEX = /\A(-?\d+)\z/
-    FLOAT_REGEX = /\A(-?\d+)\.\d+\z/
+    INTEGERS_REGEX = /\A(-?\d+)\z/
+    FLOATS_REGEX = /\A(-?\d+)\.\d+\z/
 
     class << self
       def safe_parse(parser, ss = StringScanner.new(""), cache = nil)
@@ -37,8 +37,7 @@ module Liquid
 
         markup = markup.strip # markup can be a frozen string
 
-        if (markup.start_with?('"') && markup.end_with?('"')) ||
-          (markup.start_with?("'") && markup.end_with?("'"))
+        if (markup.start_with?('"') && markup.end_with?('"')) || (markup.start_with?("'") && markup.end_with?("'"))
           return markup[1..-2]
         elsif LITERALS.key?(markup)
           return LITERALS[markup]
@@ -56,12 +55,7 @@ module Liquid
 
       def inner_parse(markup, ss, cache)
         if (markup.start_with?("(") && markup.end_with?(")")) && markup =~ RANGES_REGEX
-          return RangeLookup.parse(
-            Regexp.last_match(1),
-            Regexp.last_match(2),
-            ss,
-            cache,
-          )
+          return RangeLookup.parse(Regexp.last_match(1), Regexp.last_match(2), ss, cache)
         end
 
         if (num = parse_number(markup, ss))
@@ -74,10 +68,10 @@ module Liquid
       def parse_number(markup, ss)
         # check if the markup is simple integer or float
         case markup
-        when INTEGER_REGEX
-          return Integer(markup, 10)
-        when FLOAT_REGEX
-          return markup.to_f
+        when INTEGERS_REGEX
+          return Regexp.last_match(1).to_i
+        when FLOATS_REGEX
+          return Regexp.last_match(1).to_f
         end
 
         ss.string = markup
