@@ -64,6 +64,14 @@ module Liquid
       @length - @index - 1
     end
 
+    def odd
+      @index.odd?
+    end
+
+    def even
+      @index.even?
+    end
+
     # @liquid_public_docs
     # @liquid_summary
     #   Returns `true` if the current iteration is the first. Returns `false` if not.
