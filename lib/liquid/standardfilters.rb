@@ -3,10 +3,13 @@
 require 'cgi'
 require 'base64'
 require 'bigdecimal'
+
 module Liquid
   module StandardFilters
+    MIN_I32 = -(1 << 31)
     MAX_I32 = (1 << 31) - 1
-    private_constant :MAX_I32
+    I32_RANGE = MIN_I32..MAX_I32
+    private_constant :MIN_I32, :MAX_I32, :I32_RANGE
 
     MIN_I64 = -(1 << 63)
     MAX_I64 = (1 << 63) - 1
@@ -214,11 +217,13 @@ module Liquid
           Utils.to_s(input).slice(offset, length) || ''
         end
       rescue RangeError
-        if I64_RANGE.cover?(length) && I64_RANGE.cover?(offset)
+        max_range = Gem.win_platform? ? I32_RANGE : I64_RANGE
+
+        if max_range.cover?(length) && max_range.cover?(offset)
           raise # unexpected error
         end
-        offset = offset.clamp(I64_RANGE)
-        length = length.clamp(I64_RANGE)
+        offset = offset.clamp(max_range)
+        length = length.clamp(max_range)
         retry
       end
     end
@@ -386,7 +391,16 @@ module Liquid
         end
       elsif ary.all? { |el| el.respond_to?(:[]) }
         begin
-          ary.sort { |a, b| nil_safe_compare(a[property], b[property]) }
+          ary.sort do |a, b| 
+            s = nil_safe_compare(a[property], b[property]) 
+
+            # This should provide a stable sort by comparing the full objects if the properties are equal
+            if (s == 0) && (a.is_a?(Hash) && b.is_a?(Hash))
+              nil_safe_compare("#{a[property]}#{a.sort.to_h.values.join}", "#{b[property]}#{b.sort.to_h.values.join}")
+            else
+              s
+            end
+          end
         rescue TypeError
           raise_property_error(property)
         end
@@ -415,7 +429,16 @@ module Liquid
         end
       elsif ary.all? { |el| el.respond_to?(:[]) }
         begin
-          ary.sort { |a, b| nil_safe_casecmp(a[property], b[property]) }
+          ary.sort do |a, b|
+            s = nil_safe_casecmp(a[property], b[property]) 
+
+            # This should provide a stable sort by comparing the full objects if the properties are equal
+            if (s == 0) && (a.is_a?(Hash) && b.is_a?(Hash))
+              nil_safe_casecmp("#{a[property]}#{a.sort.to_h.values.join}", "#{b[property]}#{b.sort.to_h.values.join}")
+            else
+              s
+            end
+          end
         rescue TypeError
           raise_property_error(property)
         end
@@ -1010,6 +1033,8 @@ module Liquid
 
       if result
         result
+      elsif a.nil? && b.nil?
+        0
       elsif a.nil?
         1
       elsif b.nil?
