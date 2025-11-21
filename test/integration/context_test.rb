@@ -705,14 +705,15 @@ class ContextTest < Minitest::Test
   private
 
   def assert_no_object_allocations
-    unless RUBY_ENGINE == 'ruby'
+    unless RUBY_PLATFORM !~ /mingw|mswin|java/ && RUBY_ENGINE != 'truffleruby'
       skip("stackprof needed to count object allocations")
-    end
-    require 'stackprof'
+    else
+      require 'stackprof'
 
-    profile = StackProf.run(mode: :object) do
-      yield
+      profile = StackProf.run(mode: :object) do
+        yield
+      end
+      assert_equal(0, profile[:samples])
     end
-    assert_equal(0, profile[:samples])
   end
 end # ContextTest
