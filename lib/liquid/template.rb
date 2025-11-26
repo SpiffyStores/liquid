@@ -15,7 +15,7 @@ module Liquid
   #   template.render('user_name' => 'bob')
   #
   class Template
-    attr_accessor :root, :name
+    attr_accessor :root, :name, :environment
     attr_reader :resource_limits, :warnings
 
     attr_reader :profiler
@@ -82,15 +82,14 @@ module Liquid
       # To enable profiling, pass in <tt>profile: true</tt> as an option.
       # See Liquid::Profiler for more information
       def parse(source, options = {})
-        environment = options[:environment] || Environment.default
-        new(environment: environment).parse(source, options)
+        new(environment: options[:environment]).parse(source, options)
       end
     end
 
-    def initialize(environment: Environment.default)
+    def initialize(environment: nil)
       @environment = environment
       @rethrow_errors  = false
-      @resource_limits = ResourceLimits.new(environment.default_resource_limits)
+      @resource_limits = ResourceLimits.new(environment.nil? ? Environment.default.default_resource_limits : environment.default_resource_limits)
     end
 
     # Parse source code.

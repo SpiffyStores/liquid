@@ -16,7 +16,6 @@ module Liquid
 
     def initialize(
       source:,
-      string_scanner:,
       line_numbers: false,
       line_number: nil,
       for_liquid_tag: false
@@ -28,8 +27,7 @@ module Liquid
       @tokens = []
 
       if @source
-        @ss = string_scanner
-        @ss.string = @source
+        @ss = StringScanner.new(@source)
         tokenize
       end
     end

@@ -2,8 +2,10 @@
 
 module Liquid
   class TemplateFactory
-    def for(_template_name)
-      Liquid::Template.new
+    def for(template_name)
+      template = Template.new
+      template.name = template_name
+      template
     end
   end
 end

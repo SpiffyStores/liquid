@@ -21,12 +21,18 @@ module Liquid
 
     # The default file system that is used to load templates from.
     attr_accessor :file_system
+    attr_accessor :file_system_sections
 
     # The default resource limits that are used to limit the resources that a
     # template can consume.
     attr_accessor :default_resource_limits
 
     class << self
+      attr_accessor :default_exception_renderer
+      Environment.default_exception_renderer = lambda do |exception|
+        exception
+      end
+
       # Creates a new environment instance.
       #
       # @param tags [Hash] The tags that are available to use in
@@ -76,10 +82,10 @@ module Liquid
     def initialize
       @tags = Tags::STANDARD_TAGS.dup
       @error_mode = :lax
-      @strainer_template = Class.new(StrainerTemplate).tap do |klass|
-        klass.add_filter(StandardFilters)
-      end
-      @exception_renderer = ->(exception) { exception }
+      base_strainer = register_named_strainer(Class.new(StrainerTemplate))
+      base_strainer.add_filter(StandardFilters)
+      @strainer_template = base_strainer
+      @exception_renderer = Environment.default_exception_renderer
       @file_system = BlankFileSystem.new
       @default_resource_limits = Const::EMPTY_HASH
       @strainer_template_class_cache = {}
@@ -154,6 +160,14 @@ module Liquid
       # TODO: freeze the tags, currently this is not possible because of liquid-c
       # @strainer_template.freeze
       super
+    end
+
+    private
+
+    def register_named_strainer(strainer_class)
+      const_name = :"StrainerTemplate_#{object_id}"
+      self.class.send(:remove_const, const_name) if self.class.const_defined?(const_name, false)
+      self.class.const_set(const_name, strainer_class)
     end
   end
 end

@@ -98,82 +98,83 @@ module Liquid
       table.freeze
     end
 
-    # rubocop:disable Metrics/BlockNesting
-    class << self
-      def tokenize(ss)
-        output = []
+    def initialize(input)
+      @ss = StringScanner.new(input)
+    end
 
-        until ss.eos?
-          ss.skip(WHITESPACE_OR_NOTHING)
+    def tokenize
+      output = []
 
-          break if ss.eos?
+      until @ss.eos?
+        @ss.skip(WHITESPACE_OR_NOTHING)
 
-          start_pos = ss.pos
-          peeked = ss.peek_byte
+        break if @ss.eos?
 
-          if (special = SPECIAL_TABLE[peeked])
-            ss.scan_byte
-            # Special case for ".."
-            if special == DOT && ss.peek_byte == DOT_ORD
-              ss.scan_byte
-              output << DOTDOT
-            elsif special == DASH
-              # Special case for negative numbers
-              if (peeked_byte = ss.peek_byte) && NUMBER_TABLE[peeked_byte]
-                ss.pos -= 1
-                output << [:number, ss.scan(NUMBER_LITERAL)]
-              else
-                output << special
-              end
+        start_pos = @ss.pos
+        peeked = @ss.peek_byte
+
+        if (special = SPECIAL_TABLE[peeked])
+          @ss.scan_byte
+          # Special case for ".."
+          if special == DOT && @ss.peek_byte == DOT_ORD
+            @ss.scan_byte
+            output << DOTDOT
+          elsif special == DASH
+            # Special case for negative numbers
+            if (peeked_byte = @ss.peek_byte) && NUMBER_TABLE[peeked_byte]
+              @ss.pos -= 1
+              output << [:number, @ss.scan(NUMBER_LITERAL)]
             else
               output << special
             end
-          elsif (sub_table = TWO_CHARS_COMPARISON_JUMP_TABLE[peeked])
-            ss.scan_byte
-            if (peeked_byte = ss.peek_byte) && (found = sub_table[peeked_byte])
-              output << found
-              ss.scan_byte
+          else
+            output << special
+          end
+        elsif (sub_table = TWO_CHARS_COMPARISON_JUMP_TABLE[peeked])
+          @ss.scan_byte
+          if (peeked_byte = @ss.peek_byte) && (found = sub_table[peeked_byte])
+            output << found
+            @ss.scan_byte
+          else
+            raise_syntax_error(start_pos)
+          end
+        elsif (sub_table = COMPARISON_JUMP_TABLE[peeked])
+          @ss.scan_byte
+          if (peeked_byte = @ss.peek_byte) && (found = sub_table[peeked_byte])
+            output << found
+            @ss.scan_byte
+          else
+            output << SINGLE_COMPARISON_TOKENS[peeked]
+          end
+        else
+          type, pattern = NEXT_MATCHER_JUMP_TABLE[peeked]
+
+          if type && (t = @ss.scan(pattern))
+            # Special case for "contains"
+            output << if type == :id && t == "contains" && output.last&.first != :dot
+              COMPARISON_CONTAINS
             else
-              raise_syntax_error(start_pos, ss)
-            end
-          elsif (sub_table = COMPARISON_JUMP_TABLE[peeked])
-            ss.scan_byte
-            if (peeked_byte = ss.peek_byte) && (found = sub_table[peeked_byte])
-              output << found
-              ss.scan_byte
-            else
-              output << SINGLE_COMPARISON_TOKENS[peeked]
+              [type, t]
             end
           else
-            type, pattern = NEXT_MATCHER_JUMP_TABLE[peeked]
-
-            if type && (t = ss.scan(pattern))
-              # Special case for "contains"
-              output << if type == :id && t == "contains" && output.last&.first != :dot
-                COMPARISON_CONTAINS
-              else
-                [type, t]
-              end
-            else
-              raise_syntax_error(start_pos, ss)
-            end
+            raise_syntax_error(start_pos)
           end
         end
-        # rubocop:enable Metrics/BlockNesting
-        output << EOS
-      rescue ::ArgumentError => e
-        if e.message == "invalid byte sequence in #{ss.string.encoding}"
-          raise SyntaxError, "Invalid byte sequence in #{ss.string.encoding}"
-        else
-          raise
-        end
       end
+      # rubocop:enable Metrics/BlockNesting
+      output << EOS
+    rescue ::ArgumentError => e
+      if e.message == "invalid byte sequence in #{@ss.string.encoding}"
+        raise SyntaxError, "Invalid byte sequence in #{@ss.string.encoding}"
+      else
+        raise
+      end
+    end
 
-      def raise_syntax_error(start_pos, ss)
-        ss.pos = start_pos
-        # the character could be a UTF-8 character, use getch to get all the bytes
-        raise SyntaxError, "Unexpected character #{ss.getch}"
-      end
+    def raise_syntax_error(start_pos)
+      @ss.pos = start_pos
+      # the character could be a UTF-8 character, use getch to get all the bytes
+      raise SyntaxError, "Unexpected character #{@ss.getch}"
     end
   end
 end

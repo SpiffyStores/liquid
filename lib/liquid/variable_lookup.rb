@@ -6,20 +6,16 @@ module Liquid
 
     attr_reader :name, :lookups
 
-    def self.parse(markup, string_scanner = StringScanner.new(""), cache = nil)
-      new(markup, string_scanner, cache)
+    def self.parse(markup, cache = nil)
+      new(markup, cache)
     end
 
-    def initialize(markup, string_scanner = StringScanner.new(""), cache = nil)
+    def initialize(markup, cache = nil)
       lookups = markup.scan(VariableParser)
 
       name = lookups.shift
       if name&.start_with?('[') && name&.end_with?(']')
-        name = Expression.parse(
-          name[1..-2],
-          string_scanner,
-          cache,
-        )
+        name = Expression.parse(name[1..-2], cache)
       end
       @name = name
 
@@ -29,11 +25,7 @@ module Liquid
       @lookups.each_index do |i|
         lookup = lookups[i]
         if lookup&.start_with?('[') && lookup&.end_with?(']')
-          lookups[i] = Expression.parse(
-            lookup[1..-2],
-            string_scanner,
-            cache,
-          )
+          lookups[i] = Expression.parse(lookup[1..-2], cache)
         elsif COMMAND_METHODS.include?(lookup)
           @command_flags |= 1 << i
         end

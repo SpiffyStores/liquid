@@ -3,18 +3,13 @@
 module Liquid
   class ParseContext
     attr_accessor :locale, :line_number, :trim_whitespace, :depth
-    attr_reader :partial, :warnings, :error_mode, :environment
+    attr_reader :partial, :warnings, :error_mode
 
     def initialize(options = Const::EMPTY_HASH)
-      @environment = options.fetch(:environment, Environment.default)
       @template_options = options ? options.dup : {}
 
       @locale   = @template_options[:locale] ||= I18n.new
       @warnings = []
-
-      # constructing new StringScanner in Lexer, Tokenizer, etc is expensive
-      # This StringScanner will be shared by all of them
-      @string_scanner = StringScanner.new("")
 
       @expression_cache = if options[:expression_cache].nil?
         {}
@@ -37,21 +32,15 @@ module Liquid
     end
 
     def new_parser(input)
-      @string_scanner.string = input
-      Parser.new(@string_scanner)
+      Parser.new(input)
     end
 
     def new_tokenizer(source, start_line_number: nil, for_liquid_tag: false)
-      Tokenizer.new(
-        source: source,
-        string_scanner: @string_scanner,
-        line_number: start_line_number,
-        for_liquid_tag: for_liquid_tag,
-      )
+      Tokenizer.new(source: source, line_number: start_line_number, for_liquid_tag: for_liquid_tag)
     end
 
     def safe_parse_expression(parser)
-      Expression.safe_parse(parser, @string_scanner, @expression_cache)
+      Expression.safe_parse(parser, @expression_cache)
     end
 
     def parse_expression(markup, safe: false)
@@ -66,14 +55,13 @@ module Liquid
         raise Liquid::InternalError, "unsafe parse_expression cannot be used in strict2 mode"
       end
 
-      Expression.parse(markup, @string_scanner, @expression_cache)
+      Expression.parse(markup, @expression_cache)
     end
 
     def partial=(value)
       @partial = value
       @options = value ? partial_options : @template_options
-
-      @error_mode = @options[:error_mode] || @environment.error_mode
+      @error_mode = @options[:error_mode] || self.environment.error_mode
     end
 
     def partial_options
@@ -87,6 +75,10 @@ module Liquid
           @template_options
         end
       end
+    end
+
+    def environment
+      @options[:environment] || Environment.default
     end
   end
 end

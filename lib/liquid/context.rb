@@ -18,12 +18,13 @@ module Liquid
     attr_accessor :exception_renderer, :template_name, :partial, :global_filter, :strict_variables, :strict_filters, :environment
 
     # rubocop:disable Metrics/ParameterLists
-    def self.build(environment: Environment.default, environments: {}, outer_scope: {}, registers: {}, rethrow_errors: false, resource_limits: nil, static_environments: {}, &block)
+    def self.build(environment: nil, environments: {}, outer_scope: {}, registers: {}, rethrow_errors: false, resource_limits: nil, static_environments: {}, &block)
       new(environments, outer_scope, registers, rethrow_errors, resource_limits, static_environments, environment, &block)
     end
 
-    def initialize(environments = {}, outer_scope = {}, registers = {}, rethrow_errors = false, resource_limits = nil, static_environments = {}, environment = Environment.default)
+    def initialize(environments = {}, outer_scope = {}, registers = {}, rethrow_errors = false, resource_limits = nil, static_environments = {}, environment = nil)
       @environment = environment
+      current_environment = environment.nil? ? Environment.default : environment
       @environments = [environments]
       @environments.flatten!
 
@@ -33,22 +34,19 @@ module Liquid
       @errors              = []
       @partial             = false
       @strict_variables    = false
-      @resource_limits     = resource_limits || ResourceLimits.new(environment.default_resource_limits)
+      @resource_limits     = resource_limits || ResourceLimits.new(current_environment.default_resource_limits)
       @base_scope_depth    = 0
       @interrupts          = []
       @filters             = []
       @global_filter       = nil
       @disabled_tags       = {}
 
-      # Instead of constructing new StringScanner objects for each Expression parse,
-      # we recycle the same one.
-      @string_scanner = StringScanner.new("")
-
       @registers.static[:cached_partials] ||= {}
-      @registers.static[:file_system] ||= environment.file_system
+      @registers.static[:cached_sections] ||= {}
+      @registers.static[:file_system] ||= current_environment.file_system
       @registers.static[:template_factory] ||= Liquid::TemplateFactory.new
 
-      self.exception_renderer = environment.exception_renderer
+      self.exception_renderer = current_environment.exception_renderer
       if rethrow_errors
         self.exception_renderer = Liquid::RAISE_EXCEPTION_LAMBDA
       end
@@ -65,7 +63,7 @@ module Liquid
     end
 
     def strainer
-      @strainer ||= @environment.create_strainer(self, @filters)
+      @strainer ||= @environment.nil? ? Environment.default.create_strainer(self, @filters) : @environment.create_strainer(self, @filters)
     end
 
     # Adds filters to this context.
@@ -180,7 +178,7 @@ module Liquid
     # Example:
     #   products == empty #=> products.empty?
     def [](expression)
-      evaluate(Expression.parse(expression, @string_scanner))
+      evaluate(Expression.parse(expression))
     end
 
     def key?(key)

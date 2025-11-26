@@ -144,6 +144,6 @@ class LexerUnitTest < Minitest::Test
   private
 
   def tokenize(input)
-    Lexer.tokenize(StringScanner.new(input))
+    Lexer.new(input).tokenize
   end
 end

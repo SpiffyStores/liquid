@@ -25,14 +25,14 @@ module Liquid
     # malicious input as described in https://github.com/Shopify/liquid/issues/1357
     RANGES_REGEX = /\A\(\s*(?>(\S+)\s*\.\.)\s*(\S+)\s*\)\z/
     INTEGERS_REGEX = /\A(-?\d+)\z/
-    FLOATS_REGEX = /\A(-?\d+)\.\d+\z/
+    FLOATS_REGEX = /\A(-?\d+\.\d+)\z/
 
     class << self
-      def safe_parse(parser, ss = StringScanner.new(""), cache = nil)
-        parse(parser.expression, ss, cache)
+      def safe_parse(parser, cache = nil)
+        parse(parser.expression, cache)
       end
 
-      def parse(markup, ss = StringScanner.new(""), cache = nil)
+      def parse(markup, cache = nil)
         return unless markup
 
         markup = markup.strip # markup can be a frozen string
@@ -47,25 +47,25 @@ module Liquid
         if cache
           return cache[markup] if cache.key?(markup)
 
-          cache[markup] = inner_parse(markup, ss, cache).freeze
+          cache[markup] = inner_parse(markup, cache).freeze
         else
-          inner_parse(markup, ss, nil).freeze
+          inner_parse(markup, nil).freeze
         end
       end
 
-      def inner_parse(markup, ss, cache)
+      def inner_parse(markup, cache)
         if (markup.start_with?("(") && markup.end_with?(")")) && markup =~ RANGES_REGEX
-          return RangeLookup.parse(Regexp.last_match(1), Regexp.last_match(2), ss, cache)
+          return RangeLookup.parse(Regexp.last_match(1), Regexp.last_match(2), cache)
         end
 
-        if (num = parse_number(markup, ss))
+        if (num = parse_number(markup))
           num
         else
-          VariableLookup.parse(markup, ss, cache)
+          VariableLookup.parse(markup, cache)
         end
       end
 
-      def parse_number(markup, ss)
+      def parse_number(markup)
         # check if the markup is simple integer or float
         case markup
         when INTEGERS_REGEX
@@ -74,7 +74,7 @@ module Liquid
           return Regexp.last_match(1).to_f
         end
 
-        ss.string = markup
+        ss = StringScanner.new(markup)
         # the first byte must be a digit or  a dash
         byte = ss.scan_byte
 
